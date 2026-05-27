@@ -4,22 +4,26 @@
 """
 client_multi_agent.py — Multi-Agent Concurrent Session Simulator
 
-验证 Phase 4 P1 per-session lock 的正确性：
-  Scenario 1: 并发 Core ISA — 多 Agent 同时发送 SYS_STATUS；响应无交叉、无乱序
-  Scenario 2: 跨 Session TASK_QUERY 隔离 — Agent-B 查 Agent-A 的 handle 应返回 0xFF
-  Scenario 3: 并发 SVC_RESTART — 多 Agent 同时 restart 不同服务；幂等性 + 独立 handle
-  Scenario 4: 断连恢复 — 强制断开 Agent-C，验证其他 Agent 不受影响
+Validates per-session lock correctness across four scenarios:
+  Scenario 1: Concurrent Core ISA — multiple agents send SYS_STATUS simultaneously;
+              responses must not interleave or arrive out of order
+  Scenario 2: Cross-session TASK_QUERY isolation — Agent-B querying Agent-A's
+              handle must receive Status=0xFF (no information leak)
+  Scenario 3: Concurrent SVC_RESTART — multiple agents restart different services
+              simultaneously; idempotency + independent handles per session
+  Scenario 4: Disconnect resilience — Agent-C abruptly disconnects; other agents
+              must remain unaffected
 
-用法:
+Usage:
   python3 client_multi_agent.py <host> [port]
 
-  host   — RHEL 节点运行 asyd
-  port   — 默认 7816
+  host  — node running asyd
+  port  — default 7816
 
-前提:
-  - asyd 以多线程模式运行 (Phase 4 P1 版本)
-  - Agent 公钥已加入服务端 /etc/asyd/authorized_agents
-  - asyd 运行需要 sudo（systemctl 权限）
+Prerequisites:
+  - asyd running in multi-threaded mode (make asyd && sudo bin/asyd)
+  - Agent public key added to /etc/asyd/authorized_agents on the server
+  - asyd requires sudo (systemctl privileges)
 
 Dependencies:
   pip install noiseprotocol cryptography

@@ -4,23 +4,22 @@
 """
 client_svc_restart.py — SVC_RESTART + TASK_QUERY E2E Test Client
 
-验证 TC-E2E-001 (正常路径) 和 TC-E2E-002 (幂等轮询):
-  1. 连接 asyd，Noise IK 握手
-  2. 发送 SVC_RESTART("<service>")  →  Task_Handle + SW=0x9000
-  3. 轮询 TASK_QUERY(handle)  →  直到 Status != Pending（最多 30 秒）
-  4. 打印最终 Status
+Validates TC-E2E-001 (happy path) and TC-E2E-002 (idempotent polling):
+  1. Connect to asyd, Noise IK handshake
+  2. Send SVC_RESTART("<service>")  →  Task_Handle + SW=0x9000
+  3. Poll TASK_QUERY(handle)  →  until Status != Pending (max 30 s)
+  4. Print final Status
 
-用法:
+Usage:
   python3 client_svc_restart.py <host> [port] [service]
 
-  service 默认值: crond（RHEL 上无害的服务，restart 很快完成）
+  service default: crond (harmless RHEL service; restart completes quickly)
 
-前提:
-  - asyd 在目标节点运行 (make asyd && sudo bin/asyd)
-  - 客户端密钥已注册:
+Prerequisites:
+  - asyd running on target node (make asyd && sudo bin/asyd)
+  - Client key generated and registered:
       python3 tools/client/asys_keygen.py
-      python3 tools/server/generate_token.py   # 在 RHEL 端
-      python3 examples/client_core_isa.py <host>   # 完成 TOFU
+      # add ~/.asys/id_curve25519.pub to /etc/asyd/authorized_agents on server
 
 Dependencies:
   pip install noiseprotocol cryptography
