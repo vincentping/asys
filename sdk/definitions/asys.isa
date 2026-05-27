@@ -1,0 +1,482 @@
+# ASys Instruction Set Architecture — Machine-Readable Definition
+# Format: TOML
+#
+# response_len: payload bytes, excluding the 2-byte SW (Status Word)
+# cla_sec:      plain=CLA.Sec=00 / signed=CLA.Sec=01 / encrypted=CLA.Sec=10
+# execution:    sync=0x9000 means done / async=0x9000 means queued (returns Task_Handle)
+#
+# Agent-facing fields (agent_description, when_to_use, when_not_to_use,
+# required_capability, side_effects, reversible, risk_level) are reserved
+# for Phase 6. Keys are present but intentionally empty.
+#
+# Spec reference: docs/asys-spec.md §1
+
+[meta]
+version          = "1.0"
+protocol_version = "0x0100"
+last_updated     = "2026-04-02"
+spec_ref         = "docs/asys-spec.md"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Core ISA  (0x00–0x0F)
+# Read-only, zero side effects. No instruction-level signing required.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[instruction."0x00"]
+name             = "SYS_CAPS"
+group            = "core_isa"
+execution        = "sync"
+cla_sec          = "plain"
+idempotent       = true
+status           = "stable"
+response_len     = 34   # 36 total − 2 SW
+
+agent_description   = ""
+when_to_use         = ""
+when_not_to_use     = ""
+required_capability = ""
+side_effects        = ""
+reversible          = true
+risk_level          = ""
+
+[[instruction."0x00".response_fields]]
+offset      = 0
+name        = "core_bitmap"
+type        = "uint32"
+description = "Core ISA 指令位图（bit N=1 表示 INS=N 在该 Agent 视角物理存在）"
+
+[[instruction."0x00".response_fields]]
+offset      = 4
+name        = "ext_bitmap"
+type        = "uint32"
+description = "Extended ISA 指令位图"
+
+[[instruction."0x00".response_fields]]
+offset      = 8
+name        = "protocol_version"
+type        = "uint16"
+description = "协议版本，大端序；0x0100 = v1.0"
+
+[[instruction."0x00".response_fields]]
+offset      = 10
+name        = "kernel_hash"
+type        = "uint32"
+description = "4 字节内核版本摘要，用于特性兼容性快速索引"
+
+[[instruction."0x00".response_fields]]
+offset      = 14
+name        = "cpu_ncores"
+type        = "uint16"
+description = "CPU 逻辑核心数"
+
+[[instruction."0x00".response_fields]]
+offset      = 16
+name        = "cpu_arch_code"
+type        = "uint16"
+description = "CPU 架构码"
+
+[[instruction."0x00".response_fields]]
+offset      = 18
+name        = "total_ram_mb"
+type        = "uint32"
+description = "总物理内存（MB）"
+
+[[instruction."0x00".response_fields]]
+offset      = 22
+name        = "total_swap_mb"
+type        = "uint32"
+description = "总 Swap 大小（MB）"
+
+[[instruction."0x00".response_fields]]
+offset      = 26
+name        = "root_size_mb"
+type        = "uint32"
+description = "根分区总容量（MB）"
+
+[[instruction."0x00".response_fields]]
+offset      = 30
+name        = "fs_type_code"
+type        = "uint16"
+description = "根分区文件系统类型码"
+
+[[instruction."0x00".response_fields]]
+offset      = 32
+name        = "rpi_type"
+type        = "uint8"
+description = "RPI 采样类型：0x01=NATIVE_KERNEL，0x02=USER_SIMULATED，0xFF=NOT_AVAILABLE"
+
+[[instruction."0x00".response_fields]]
+offset      = 33
+name        = "reserved"
+type        = "uint8"
+description = "预留对齐字节"
+
+# ─── 0x01 SYS_HELLO ──────────────────────────────────────────────────────────
+
+[instruction."0x01"]
+name             = "SYS_HELLO"
+group            = "core_isa"
+execution        = "sync"
+cla_sec          = "plain"
+idempotent       = true
+status           = "stable"
+response_len     = 16   # 18 total − 2 SW
+
+agent_description   = ""
+when_to_use         = ""
+when_not_to_use     = ""
+required_capability = ""
+side_effects        = ""
+reversible          = true
+risk_level          = ""
+
+[[instruction."0x01".response_fields]]
+offset      = 0
+name        = "magic"
+type        = "uint32"
+description = "固定值 0x41535953（ASCII: 'ASYS'）"
+
+[[instruction."0x01".response_fields]]
+offset      = 4
+name        = "node_uid"
+type        = "uint32"
+description = "物理机唯一指纹"
+
+[[instruction."0x01".response_fields]]
+offset      = 8
+name        = "server_timestamp"
+type        = "uint64"
+description = "纳秒级 Unix Epoch，用于计算 RTT 与时钟偏移"
+
+# ─── 0x02 SYS_STATUS ─────────────────────────────────────────────────────────
+
+[instruction."0x02"]
+name             = "SYS_STATUS"
+group            = "core_isa"
+execution        = "sync"
+cla_sec          = "plain"
+idempotent       = true
+status           = "stable"
+response_len     = 21   # 23 total − 2 SW
+# Note: Mem_Dyn 仅提供可用值；计算使用率需结合 SYS_CAPS.total_ram_mb
+
+agent_description   = ""
+when_to_use         = ""
+when_not_to_use     = ""
+required_capability = ""
+side_effects        = ""
+reversible          = true
+risk_level          = ""
+
+[[instruction."0x02".response_fields]]
+offset      = 0
+name        = "load_1min_x10"
+type        = "uint8"
+description = "1 分钟负载均值 × 10（还原：÷ 10）"
+
+[[instruction."0x02".response_fields]]
+offset      = 1
+name        = "load_5min_x10"
+type        = "uint8"
+description = "5 分钟负载均值 × 10"
+
+[[instruction."0x02".response_fields]]
+offset      = 2
+name        = "cpu_pct"
+type        = "uint8"
+description = "CPU 总使用率百分比（0–100）"
+
+[[instruction."0x02".response_fields]]
+offset      = 3
+name        = "available_mb"
+type        = "uint32"
+description = "可用内存（MB）"
+
+[[instruction."0x02".response_fields]]
+offset      = 7
+name        = "root_usage_pct"
+type        = "uint8"
+description = "根分区使用率百分比"
+
+[[instruction."0x02".response_fields]]
+offset      = 8
+name        = "io_wait_ms"
+type        = "uint32"
+description = "I/O 等待时间（ms）"
+
+[[instruction."0x02".response_fields]]
+offset      = 12
+name        = "inbound_mbps"
+type        = "uint16"
+description = "网络入向带宽（Mbps）"
+
+[[instruction."0x02".response_fields]]
+offset      = 14
+name        = "outbound_mbps"
+type        = "uint16"
+description = "网络出向带宽（Mbps）"
+
+[[instruction."0x02".response_fields]]
+offset      = 16
+name        = "rpi"
+type        = "uint8"
+description = "Resource Pressure Index：0x00=无压力，0x64=完全阻塞，0xFF=NOT_SUPPORTED（仅当 SYS_CAPS.rpi_type=0xFF 时）"
+
+[[instruction."0x02".response_fields]]
+offset      = 17
+name        = "reserved"
+type        = "bytes4"
+description = "4 字节对齐填充，预留给未来压力感知扩展字段"
+
+# ─── 0x03 SYS_PROCS ──────────────────────────────────────────────────────────
+# Response layout:
+#   [0-1]  Total_Procs (uint16)
+#   [2-41] Top-5 slots × 8 bytes each
+#          Per slot: [PID(4B)][CPU_x100(2B)][MEM_pct(1B)][Status_Flag(1B)]
+#   [42-43] SW
+
+[instruction."0x03"]
+name             = "SYS_PROCS"
+group            = "core_isa"
+execution        = "sync"
+cla_sec          = "plain"
+idempotent       = true
+status           = "stable"
+response_len     = 42   # 44 total − 2 SW
+
+agent_description   = ""
+when_to_use         = ""
+when_not_to_use     = ""
+required_capability = ""
+side_effects        = ""
+reversible          = true
+risk_level          = ""
+
+[[instruction."0x03".response_fields]]
+offset      = 0
+name        = "total_procs"
+type        = "uint16"
+description = "系统当前总进程数"
+
+[[instruction."0x03".response_fields]]
+offset      = 2
+name        = "slot_0_pid"
+type        = "uint32"
+description = "Top-1 进程 PID（0x00000000=空 Slot）"
+
+[[instruction."0x03".response_fields]]
+offset      = 6
+name        = "slot_0_cpu_x100"
+type        = "uint16"
+description = "Top-1 进程 CPU 使用率 × 100（还原：÷ 100，精度 0.01%）"
+
+[[instruction."0x03".response_fields]]
+offset      = 8
+name        = "slot_0_mem_pct"
+type        = "uint8"
+description = "Top-1 进程内存使用率百分比"
+
+[[instruction."0x03".response_fields]]
+offset      = 9
+name        = "slot_0_status_flag"
+type        = "uint8"
+description = "Top-1 进程状态标志：Bit0=Zombie，Bit1=Unresponsive，Bit2=Privileged"
+
+[[instruction."0x03".response_fields]]
+offset      = 10
+name        = "slot_1_pid"
+type        = "uint32"
+description = "Top-2 进程 PID"
+
+[[instruction."0x03".response_fields]]
+offset      = 14
+name        = "slot_1_cpu_x100"
+type        = "uint16"
+description = "Top-2 进程 CPU 使用率 × 100"
+
+[[instruction."0x03".response_fields]]
+offset      = 16
+name        = "slot_1_mem_pct"
+type        = "uint8"
+description = "Top-2 进程内存使用率百分比"
+
+[[instruction."0x03".response_fields]]
+offset      = 17
+name        = "slot_1_status_flag"
+type        = "uint8"
+description = "Top-2 进程状态标志"
+
+[[instruction."0x03".response_fields]]
+offset      = 18
+name        = "slot_2_pid"
+type        = "uint32"
+description = "Top-3 进程 PID"
+
+[[instruction."0x03".response_fields]]
+offset      = 22
+name        = "slot_2_cpu_x100"
+type        = "uint16"
+description = "Top-3 进程 CPU 使用率 × 100"
+
+[[instruction."0x03".response_fields]]
+offset      = 24
+name        = "slot_2_mem_pct"
+type        = "uint8"
+description = "Top-3 进程内存使用率百分比"
+
+[[instruction."0x03".response_fields]]
+offset      = 25
+name        = "slot_2_status_flag"
+type        = "uint8"
+description = "Top-3 进程状态标志"
+
+[[instruction."0x03".response_fields]]
+offset      = 26
+name        = "slot_3_pid"
+type        = "uint32"
+description = "Top-4 进程 PID"
+
+[[instruction."0x03".response_fields]]
+offset      = 30
+name        = "slot_3_cpu_x100"
+type        = "uint16"
+description = "Top-4 进程 CPU 使用率 × 100"
+
+[[instruction."0x03".response_fields]]
+offset      = 32
+name        = "slot_3_mem_pct"
+type        = "uint8"
+description = "Top-4 进程内存使用率百分比"
+
+[[instruction."0x03".response_fields]]
+offset      = 33
+name        = "slot_3_status_flag"
+type        = "uint8"
+description = "Top-4 进程状态标志"
+
+[[instruction."0x03".response_fields]]
+offset      = 34
+name        = "slot_4_pid"
+type        = "uint32"
+description = "Top-5 进程 PID"
+
+[[instruction."0x03".response_fields]]
+offset      = 38
+name        = "slot_4_cpu_x100"
+type        = "uint16"
+description = "Top-5 进程 CPU 使用率 × 100"
+
+[[instruction."0x03".response_fields]]
+offset      = 40
+name        = "slot_4_mem_pct"
+type        = "uint8"
+description = "Top-5 进程内存使用率百分比"
+
+[[instruction."0x03".response_fields]]
+offset      = 41
+name        = "slot_4_status_flag"
+type        = "uint8"
+description = "Top-5 进程状态标志"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Protocol Control  (0x10–0x1F)
+# Reserved by ASys protocol group. No instruction-level signing (CLA.Sec=00).
+# ─────────────────────────────────────────────────────────────────────────────
+
+[instruction."0x11"]
+name             = "TASK_QUERY"
+group            = "protocol_control"
+execution        = "sync"
+cla_sec          = "plain"
+idempotent       = true
+status           = "stable"
+response_len     = 1    # Status(1B) + SW(2B)
+# Note: SW=0x9000 means the query itself succeeded; task result is in `status` field.
+
+agent_description   = ""
+when_to_use         = ""
+when_not_to_use     = ""
+required_capability = ""
+side_effects        = ""
+reversible          = true
+risk_level          = ""
+
+[[instruction."0x11".response_fields]]
+offset      = 0
+name        = "status"
+type        = "uint8"
+description = "任务状态：0x00=Pending，0x01=Success，0x02=Failed，0x03=Timeout，0x04=Cancelled，0xFF=Handle Not Found"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Standard ISA: Process Control  (0x20–0x2F)
+# Instruction-level signing required (CLA.Sec=01, CLA=0x04).
+# ─────────────────────────────────────────────────────────────────────────────
+
+[instruction."0x20"]
+name             = "PROC_THROTTLE"
+group            = "standard_isa"
+execution        = "sync"
+cla_sec          = "signed"
+idempotent       = true
+status           = "stable"
+response_len     = 0    # SW only
+# Note: P1=0x00 STOP（节流），P1=0x01 CONT（恢复）。
+#       SIGSTOP on already-stopped / SIGCONT on running = no-op → idempotent.
+#       Requires CAP_KILL.
+
+agent_description   = ""
+when_to_use         = ""
+when_not_to_use     = ""
+required_capability = ""
+side_effects        = ""
+reversible          = true
+risk_level          = ""
+
+# ─── 0x21 NET_ISOLATE ────────────────────────────────────────────────────────
+# Planned (Phase 6). APDU 布局待规范补充。
+# 操作对象是进程，归入 Process Control 而非 Network Control（0x3x）。
+
+[instruction."0x21"]
+name             = "NET_ISOLATE"
+group            = "standard_isa"
+execution        = "async"
+cla_sec          = "signed"
+idempotent       = true
+status           = "planned"
+response_len     = 0    # TBD
+# Note: 隔离目标进程的网络访问；需 CAP_NET_ADMIN；实现待 Phase 6 规范补充。
+
+agent_description   = ""
+when_to_use         = ""
+when_not_to_use     = ""
+required_capability = ""
+side_effects        = ""
+reversible          = true
+risk_level          = ""
+
+# ─── 0x22 SVC_RESTART ────────────────────────────────────────────────────────
+
+[instruction."0x22"]
+name             = "SVC_RESTART"
+group            = "standard_isa"
+execution        = "async"
+cla_sec          = "signed"
+idempotent       = true
+status           = "stable"
+response_len     = 4    # Task_Handle(4B)
+# Note: 0x9000 = 入队成功；最终结果通过 0x11 TASK_QUERY 查询。
+#       幂等性：同 Session 同 SvcName 已有 Pending Handle 时直接返回已有 Handle。
+
+agent_description   = ""
+when_to_use         = ""
+when_not_to_use     = ""
+required_capability = ""
+side_effects        = ""
+reversible          = false
+risk_level          = ""
+
+[[instruction."0x22".response_fields]]
+offset      = 0
+name        = "task_handle"
+type        = "uint32"
+description = "异步任务句柄，结构：[Session_ID(16bit) | Random(16bit)]；通过 0x11 TASK_QUERY 查询结果"

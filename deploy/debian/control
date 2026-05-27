@@ -1,0 +1,19 @@
+Source: asyd
+Section: net
+Priority: optional
+Maintainer: Vincent Ping <vincentping@gmail.com>
+Build-Depends: gcc, make
+Standards-Version: 4.6.0
+Homepage: https://github.com/vincentping/asys
+
+Package: asyd
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: ASys Daemon — Agentic System Interface
+ asyd is the reference daemon for the ASys protocol. It accepts,
+ authenticates, and executes ASys binary commands from authorized AI
+ agents over TCP port 7816, using the Noise IK handshake
+ (Curve25519 + ChaCha20-Poly1305 + BLAKE2b) for transport security
+ and a public-key whitelist for agent authorization.
+ .
+ Zero external dependencies — C standard library only.

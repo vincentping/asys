@@ -1,0 +1,48 @@
+# /etc/systemd/system/asyd.service
+# Deploy: sudo cp deploy/asyd.service /etc/systemd/system/
+#         sudo systemctl daemon-reload && sudo systemctl enable --now asyd
+
+[Unit]
+Description=ASys Daemon - Agentic System Interface
+After=network.target
+Documentation=https://github.com/vincentping/asys
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/sbin/asyd
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Caged Root: run as root but lock down capability boundary so a compromised
+# process cannot escalate further.
+CapabilityBoundingSet=CAP_KILL CAP_SYS_RESOURCE CAP_NET_ADMIN CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
+AmbientCapabilities=CAP_KILL CAP_SYS_RESOURCE CAP_NET_ADMIN CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
+NoNewPrivileges=true
+
+# Filesystem isolation: read-only everywhere except /etc/asyd (keypair +
+# authorized_agents). ConfigurationDirectory= creates /etc/asyd before the
+# namespace is set up, so ProtectSystem=strict can find the path.
+ConfigurationDirectory=asyd
+ConfigurationDirectoryMode=0700
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/etc/asyd
+
+# Block access to kernel debug interfaces
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+# AF_INET: asyd's own TCP socket (port 7816)
+# AF_UNIX: required by fork()ed systemctl children for D-Bus communication
+#           (systemctl -> systemd via /run/dbus/system_bus_socket)
+RestrictAddressFamilies=AF_INET AF_UNIX
+
+# Seccomp syscall filter: deferred to Phase 6
+# SystemCallFilter= intentionally omitted
+
+[Install]
+WantedBy=multi-user.target

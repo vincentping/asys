@@ -1,0 +1,10 @@
+asyd (0.3.0-1) unstable; urgency=low
+
+  * Phase 5 open-source release
+  * asys.isa v1.0: SYS_CAPS/SYS_HELLO/SYS_STATUS/SYS_PROCS/TASK_QUERY/
+    PROC_THROTTLE/SVC_RESTART
+  * Trust model: public-key whitelist (/etc/asyd/authorized_agents)
+  * SIGHUP hot-reload of agent whitelist (async-signal-safe)
+  * Zero external dependencies
+
+ -- Vincent Ping <vincentping@gmail.com>  Sun, 06 Apr 2026 00:00:00 +0000

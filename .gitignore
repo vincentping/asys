@@ -1,0 +1,44 @@
+# Build outputs
+**/*.o
+bin/asyd
+src/asyd/asyd
+tests/conformance/test_apdu_parser
+tests/conformance/test_auth_verify
+tests/conformance/test_handlers
+tests/conformance/test_noise_ik
+tests/conformance/test_proc_throttle
+tests/conformance/test_seq_replay
+tests/conformance/test_svc_restart
+tests/conformance/test_task_pool
+tests/conformance/test_task_query
+tests/conformance/test_whitelist
+
+# Internal docs (never push to public repo)
+docs/zh/
+
+# Key files (never commit)
+*.key
+*.bin
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+
+# Editor
+*.swp
+*~
+.DS_Store
+
+# Windows Zone.Identifier (NTFS alternate data stream, created by MobaXterm sync)
+*:Zone.Identifier
+
+# Release artifacts (upload to GitHub Releases, not committed)
+asyd-*.tar.gz
+*.rpm
+*.deb
+
+# Claude Code local config
+.claude/
