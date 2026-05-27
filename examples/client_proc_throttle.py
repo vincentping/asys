@@ -12,7 +12,8 @@ Usage:
 
 Prerequisites:
     - Generate client key: python3 tools/client/asys_keygen.py
-    - Agent registered with asyd (run client_core_isa.py once against the host)
+    - Add ~/.asys/id_curve25519.pub to /etc/asyd/authorized_agents on the server
+    - Run client_core_isa.py once to add server to known_hosts
 
 Dependencies:
     pip install noiseprotocol cryptography
