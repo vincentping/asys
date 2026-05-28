@@ -22,7 +22,6 @@
 | `docs/en/asys-spec.md` | Protocol specification: ISA, security model, APDU frame format |
 | `docs/en/asys-design-notes.md` | Architecture decision records |
 | `docs/en/asys-conformance.md` | Conformance testing guide |
-| `docs/en/asys-roadmap.md` | Roadmap and release history |
 | `docs/en/asys-whitepaper.md` | Design philosophy and competitive landscape |
 
 ---

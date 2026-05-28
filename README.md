@@ -53,7 +53,7 @@ ASys is to AI agents what POSIX syscalls are to programs: a stable, typed interf
 |------|------------|----------|---------------------------------------|
 | 0x11 | TASK_QUERY | 3B       | Poll async task status by Task_Handle |
 
-### Standard ISA — Process Control (0x20–0x2F) — signed, require CAP_KILL
+### Standard ISA — Process Control (0x20–0x2F) — signed, require elevated capabilities
 
 | INS  | Name          | Response | Description                                 |
 |------|---------------|----------|---------------------------------------------|
@@ -120,8 +120,12 @@ python3 tools/client/asys_keygen.py
 echo "<pubkey_hex>" | sudo tee -a /etc/asyd/authorized_agents
 ```
 
-The agent public key is printed by `asys_keygen.py`.
+The agent public key is printed by `asys_keygen.py`. It also generates the client key pair at
+`~/.asys/id_curve25519` used during the Noise IK handshake.
 Connections from agents not in `/etc/asyd/authorized_agents` are rejected with SW=0x6982.
+
+On first connection, the client will prompt you to confirm the server's public key fingerprint
+and save it to `~/.asys/known_hosts` — see [First connection](#first-connection) below.
 
 Reload the whitelist without restarting (existing connections are not affected):
 
@@ -373,7 +377,7 @@ a monotonic sequence number (`Seq`) prevents replay with `0x6985`.
 
 **Privilege containment:** `asyd` runs as **Caged Root** under systemd:
 `CapabilityBoundingSet` limits privileges to exactly what each instruction needs
-(`CAP_KILL`, `CAP_SYS_RESOURCE`, `CAP_NET_ADMIN`). `NoNewPrivileges=true` prevents
+(`CAP_KILL`, `CAP_SYS_RESOURCE`, `CAP_NET_ADMIN`, `CAP_SYS_PTRACE`, `CAP_DAC_READ_SEARCH`). `NoNewPrivileges=true` prevents
 escalation even if the process is compromised.
 
 **Instruction security levels** (CLA byte, bits 3–2):
@@ -393,8 +397,22 @@ escalation even if the process is compromised.
 | [`docs/en/asys-spec.md`](docs/en/asys-spec.md) | Protocol specification: ISA, security model, APDU frame format |
 | [`docs/en/asys-design-notes.md`](docs/en/asys-design-notes.md) | Architecture decision records (why not JSON / mTLS / shell) |
 | [`docs/en/asys-conformance.md`](docs/en/asys-conformance.md) | Conformance testing guide |
-| [`docs/en/asys-roadmap.md`](docs/en/asys-roadmap.md) | Roadmap and release history |
 | [`sdk/definitions/asys.isa`](sdk/definitions/asys.isa) | Machine-readable ISA definition (TOML) |
+
+---
+
+## Changelog
+
+### v0.3.0 — 2026-05-27 (initial open-source release)
+
+- `asyd` C daemon, zero external dependencies, static memory pool, zero `malloc` on the request path
+- Noise IK (Curve25519 + ChaCha20-Poly1305 + BLAKE2b) transport, 1-RTT mutual authentication
+- Agent public key whitelist (`/etc/asyd/authorized_agents`), SSH-style fingerprint verification
+- Pre-Handshake Frame: server broadcasts public key before handshake, `~/.asys/known_hosts` management
+- HMAC-BLAKE2b Auth Tag verification + Epoch_ID cross-session replay protection
+- Core ISA: `SYS_CAPS`, `SYS_HELLO`, `SYS_STATUS`, `SYS_PROCS`
+- Standard ISA: `PROC_THROTTLE`, `SVC_RESTART` (async, with `TASK_QUERY`)
+- Per-session concurrency, 60s idle timeout, journald logging, systemd Caged Root deployment
 
 ---
 

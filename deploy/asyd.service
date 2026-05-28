@@ -21,6 +21,7 @@ StandardError=journal
 CapabilityBoundingSet=CAP_KILL CAP_SYS_RESOURCE CAP_NET_ADMIN CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
 AmbientCapabilities=CAP_KILL CAP_SYS_RESOURCE CAP_NET_ADMIN CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
 NoNewPrivileges=true
+OOMScoreAdjust=-1000
 
 # Filesystem isolation: read-only everywhere except /etc/asyd (keypair +
 # authorized_agents). ConfigurationDirectory= creates /etc/asyd before the
