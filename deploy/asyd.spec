@@ -44,7 +44,7 @@ install -D -m 0644 deploy/asyd.service \
 /usr/lib/systemd/system/asyd.service
 
 %changelog
-* Wed May 28 2026 Vincent Ping <vincentping@gmail.com> - 0.3.1-1
+* Thu May 28 2026 Vincent Ping <vincentping@gmail.com> - 0.3.1-1
 - Client-Speak-First (ADR-22): wait for 4-byte Magic before Pre-Handshake Frame
 - Add --help and --version flags
 - Add TC-MAG-001/002/003 conformance tests
