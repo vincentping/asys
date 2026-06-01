@@ -3,7 +3,7 @@ CFLAGS  := -O2 -Wall -pthread
 CORE    := src/asyd/core
 HANDLERS:= src/asyd/handlers
 CONF    := tests/conformance
-VERSION := 0.3.0
+VERSION := 0.3.1
 DIST_TAR := asyd-$(VERSION).tar.gz
 
 # ── Main daemon ──────────────────────────────────────────────
@@ -64,7 +64,7 @@ $(CONF)/test_proc_throttle: $(CONF)/test_proc_throttle.c $(PHASE2_SRCS)
 	$(CC) $(CFLAGS) $^ -I$(CORE) -o $@
 
 $(CONF)/test_svc_restart: $(CONF)/test_svc_restart.c $(PHASE2_SRCS)
-	$(CC) $(CFLAGS) $^ -I$(CORE) -o $@
+	$(CC) $(CFLAGS) $^ -I$(CORE) -o $@ -ldl
 
 $(CONF)/test_task_query: $(CONF)/test_task_query.c $(PHASE2_SRCS)
 	$(CC) $(CFLAGS) $^ -I$(CORE) -o $@
@@ -83,11 +83,15 @@ SEQ_SRCS := $(CORE)/crypto_utils.c \
 $(CONF)/test_seq_replay: $(CONF)/test_seq_replay.c $(SEQ_SRCS)
 	$(CC) $(CFLAGS) $^ -I$(CORE) -o $@
 
+$(CONF)/test_client_magic: $(CONF)/test_client_magic.c
+	$(CC) $(CFLAGS) $^ -o $@
+
 TESTS := $(CONF)/test_noise_ik $(CONF)/test_whitelist \
          $(CONF)/test_apdu_parser $(CONF)/test_handlers \
          $(CONF)/test_task_pool $(CONF)/test_proc_throttle \
          $(CONF)/test_svc_restart $(CONF)/test_task_query \
-         $(CONF)/test_auth_verify $(CONF)/test_seq_replay
+         $(CONF)/test_auth_verify $(CONF)/test_seq_replay \
+         $(CONF)/test_client_magic
 
 tests: $(TESTS)
 
@@ -103,6 +107,7 @@ check: tests
 	@echo "=== test_task_query ===" && $(CONF)/test_task_query
 	@echo "=== test_auth_verify ===" && $(CONF)/test_auth_verify
 	@echo "=== test_seq_replay ===" && $(CONF)/test_seq_replay
+	@echo "=== test_client_magic ===" && $(CONF)/test_client_magic
 
 # ── Packaging ────────────────────────────────────────────────
 $(DIST_TAR):

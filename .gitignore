@@ -11,6 +11,7 @@ tests/conformance/test_seq_replay
 tests/conformance/test_svc_restart
 tests/conformance/test_task_pool
 tests/conformance/test_task_query
+tests/conformance/test_client_magic
 tests/conformance/test_whitelist
 
 # Internal docs (never push to public repo)

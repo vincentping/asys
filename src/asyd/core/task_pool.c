@@ -125,9 +125,17 @@ void task_pool_sweep_timeouts(void)
 {
     time_t now = time(NULL);
     for (int i = 0; i < TASK_POOL_SIZE; i++) {
-        if (g_pool[i].status == TASK_PENDING &&
-            now - g_pool[i].created_at > TASK_TIMEOUT_SEC) {
+        if (g_pool[i].status == TASK_EMPTY)
+            continue;
+        if (now - g_pool[i].created_at <= TASK_TIMEOUT_SEC)
+            continue;
+
+        if (g_pool[i].status == TASK_PENDING) {
+            /* Pending past TTL → mark Timeout so next TASK_QUERY returns 0x03 */
             g_pool[i].status = TASK_TIMEOUT;
+        } else {
+            /* Terminal state past TTL → free slot (agent abandoned the result) */
+            memset(&g_pool[i], 0, sizeof(TaskEntry));
         }
     }
 }

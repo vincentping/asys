@@ -150,6 +150,7 @@ def connect_and_handshake(host, port, client_priv, expected_pub_hex=None):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
     print(f"Connected to {host}:{port}")
+    sock.sendall(struct.pack('>I', PRE_HANDSHAKE_MAGIC))
 
     server_pub_hex = recv_pre_handshake_frame(sock)
 

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 /*
- * asyd.c — ASys Daemon v0.3.0 (Phase 5)
+ * asyd.c — ASys Daemon v0.3.1 (Phase 5 + Client-Speak-First)
  *
  * Trust model: public-key whitelist only (spec §2.1).
  *   - whitelist_load() reads /etc/asyd/authorized_agents at startup
@@ -53,7 +53,7 @@
  * depth) and MAX_CLIENTS (concurrent session cap) can be tuned independently.
  */
 #define LISTEN_BACKLOG 8
-#define ASYD_VERSION   "0.3.0"
+#define ASYD_VERSION   "0.3.1"
 
 /* ── Graceful shutdown ──────────────────────────────────────── */
 static volatile sig_atomic_t g_stop = 0;
@@ -300,6 +300,23 @@ static void *client_thread(void *arg)
     return NULL;
 }
 
+/* ── Client-Speak-First: wait for 4-byte Magic ───────────────
+ * Returns 0 on success, -1 on wrong magic or timeout.
+ * Temporarily sets SO_RCVTIMEO to 1 s; caller restores it.    */
+static int wait_for_client_magic(int fd)
+{
+    struct timeval tv1 = { .tv_sec = 1, .tv_usec = 0 };
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv1, sizeof(tv1));
+
+    uint8_t buf[4];
+    if (recv_exact(fd, buf, 4) != 4)
+        return -1;
+
+    uint32_t magic = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16)
+                   | ((uint32_t)buf[2] <<  8) |  (uint32_t)buf[3];
+    return (magic == 0x41535953U) ? 0 : -1;
+}
+
 /* ── Per-connection handler ──────────────────────────────────── */
 static void handle_client(int cfd, const char *peer_ip)
 {
@@ -315,6 +332,17 @@ static void handle_client(int cfd, const char *peer_ip)
     strncpy(ctx.peer_ip, peer_ip, sizeof(ctx.peer_ip) - 1);
 
     ApduParser *p = NULL;
+
+    /* ── Client-Speak-First: verify Magic before sending anything ── */
+    if (wait_for_client_magic(cfd) != 0) {
+        DBG("%s magic check failed (timeout or mismatch)", peer_ip);
+        return;  /* close(cfd) handled by caller; send nothing */
+    }
+    /* Restore 60-second idle timeout for the rest of the session */
+    {
+        struct timeval tv60 = { .tv_sec = 60, .tv_usec = 0 };
+        setsockopt(cfd, SOL_SOCKET, SO_RCVTIMEO, &tv60, sizeof(tv60));
+    }
 
     /* ── Pre-Handshake Frame ─────────────────────────────── */
     /* 38-byte plaintext: Magic(4B) + Version(2B) + ServerPubKey(32B)
@@ -519,18 +547,31 @@ typedef struct {
 } AsydConfig;
 
 static const struct option long_opts[] = {
-    { "port",   required_argument, NULL, 'p' },
-    { "listen", required_argument, NULL, 'l' },
-    { "debug",  no_argument,       NULL, 'd' },
+    { "port",    required_argument, NULL, 'p' },
+    { "listen",  required_argument, NULL, 'l' },
+    { "debug",   no_argument,       NULL, 'd' },
+    { "version", no_argument,       NULL, 'V' },
+    { "help",    no_argument,       NULL, 'h' },
     { NULL, 0, NULL, 0 }
 };
+
+static void print_usage(void)
+{
+    printf("Usage: asyd [OPTIONS]\n\n");
+    printf("Options:\n");
+    printf("  --port PORT     Listen port (default: 7816)\n");
+    printf("  --listen ADDR   Listen address (default: 0.0.0.0)\n");
+    printf("  --debug         Enable debug logging\n");
+    printf("  --version       Show version and exit\n");
+    printf("  --help          Show this message and exit\n");
+}
 
 static AsydConfig parse_args(int argc, char **argv)
 {
     AsydConfig cfg = { .port = 7816, .listen = "0.0.0.0", .debug = 0 };
 
     int opt;
-    while ((opt = getopt_long(argc, argv, "p:l:d", long_opts, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "p:l:dVh", long_opts, NULL)) != -1) {
         switch (opt) {
         case 'p':
             cfg.port = (uint16_t)atoi(optarg);
@@ -546,8 +587,14 @@ static AsydConfig parse_args(int argc, char **argv)
         case 'd':
             cfg.debug = 1;
             break;
+        case 'V':
+            printf("asyd %s\n", ASYD_VERSION);
+            exit(0);
+        case 'h':
+            print_usage();
+            exit(0);
         default:
-            fprintf(stderr, "Usage: asyd [--port <n>] [--listen <addr>] [--debug]\n");
+            print_usage();
             exit(1);
         }
     }

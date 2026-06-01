@@ -12,6 +12,8 @@
  *   TC-SVC-008: name 65 bytes → 0x6A80
  *   TC-SVC-009: idempotency — second request returns existing Pending handle
  *   TC-SVC-010: pool full → 0x6400 (Blocked), no fork
+ *   TC-SVC-011: returned handle encodes session_id in high 16 bits
+ *   TC-SVC-012: fork() fails with ENOMEM → SW=0x6F01 (not 0x6F00)
  *
  * Note on TC-SVC-007/008: tests that pass validation will fork() systemctl.
  * The child process attempts to restart an unlikely-named service; it will fail
@@ -42,12 +44,33 @@
  *   ./test_svc_restart
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <errno.h>
+#include <dlfcn.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+
+/* ── TC-SVC-012: fork() mock ─────────────────────────────
+ * When g_mock_fork_enomem is set, fork() returns -1 / ENOMEM.
+ * All other calls (TC-SVC-007, TC-SVC-011) use the real fork. */
+static int g_mock_fork_enomem = 0;
+
+pid_t fork(void)
+{
+    if (g_mock_fork_enomem) {
+        errno = ENOMEM;
+        return (pid_t)-1;
+    }
+    typedef pid_t (*fork_t)(void);
+    static fork_t real_fork = NULL;
+    if (!real_fork)
+        real_fork = (fork_t)dlsym(RTLD_NEXT, "fork");
+    return real_fork();
+}
 
 #include "apdu_parser.h"
 #include "dispatcher.h"
@@ -221,6 +244,28 @@ int main(void)
     /* clean up */
     for (int i = 0; i < TASK_POOL_SIZE; i++)
         task_pool_free(fill_handles[i]);
+
+    /* ── TC-SVC-011: handle encodes session_id ──────────── */
+    printf("\n[TC-SVC-011: returned handle encodes session_id in high 16 bits]\n");
+    task_pool_init();
+    req = make_restart_req(APDU_SEC_SIGNED, "nginx", 5,
+                           data_buf, (int)sizeof(data_buf));
+    n = handler_svc_restart(&req, resp, sizeof(resp), TEST_SESSION_ID);
+    uint32_t h = get_u32(resp);
+    EXPECT("handle high 16 bits == TEST_SESSION_ID",
+           n == 6 && get_u16(resp + 4) == 0x9000 && (h >> 16) == TEST_SESSION_ID);
+    reap_children();
+
+    /* ── TC-SVC-012: fork ENOMEM → 0x6F01 ──────────────── */
+    printf("\n[TC-SVC-012: fork ENOMEM → 0x6F01]\n");
+    task_pool_init();
+    g_mock_fork_enomem = 1;
+    req = make_restart_req(APDU_SEC_SIGNED, "nginx", 5,
+                           data_buf, (int)sizeof(data_buf));
+    n = handler_svc_restart(&req, resp, sizeof(resp), TEST_SESSION_ID);
+    g_mock_fork_enomem = 0;
+    EXPECT("fork ENOMEM → 0x6F01",
+           n == 2 && get_u16(resp) == 0x6F01);
 
     /* ── Summary ─────────────────────────────────────────── */
     printf("\n=== Summary: %d passed, %d failed ===\n", g_pass, g_fail);

@@ -10,6 +10,10 @@
  *   TC-QUERY-006: Failed state → Status=0x02, handle released
  *   TC-QUERY-007: Timeout state → Status=0x03, handle released
  *   TC-QUERY-008: sweep_timeouts triggered inside handler → Status=0x03
+ *   TC-QUERY-009: Cancelled state → Status=0x04, handle released
+ *   TC-QUERY-010: Lc > 4 (extra bytes) silently accepted
+ *   TC-QUERY-011: terminal Handle past TTL → sweep reclaims slot → Status=0xFF
+ *   TC-QUERY-012: release_session() zeroes terminal slots (not only Pending)
  *
  * Build (from tests/conformance/):
  *   gcc -O2 -Wall \
@@ -182,6 +186,53 @@ int main(void)
         EXPECT("handle released after timeout",
                task_pool_find_handle(handle, 1) == NULL);
     }
+
+    /* ── TC-QUERY-009: Cancelled state ──────────────────── */
+    printf("\n[TC-QUERY-009: Cancelled state — handle released]\n");
+    task_pool_init();
+    handle = task_pool_alloc(1, "haproxy", 500);
+    e = task_pool_find_handle(handle, 1);
+    if (e) e->status = TASK_CANCELLED;
+    req = make_query_req(handle, data_buf);
+    n = handler_task_query(&req, resp, sizeof(resp), 1);
+    EXPECT("Cancelled → Status=0x04, SW=0x9000",
+           n == 3 && resp[0] == 0x04 && get_u16(resp + 1) == 0x9000);
+
+    /* ── TC-QUERY-010: Lc > 4 silently accepted ─────────── */
+    printf("\n[TC-QUERY-010: Lc > 4 (extra bytes) accepted]\n");
+    task_pool_init();
+    /* Lc=5 — one extra byte beyond the 4-byte handle; handler reads only [0..3] */
+    static uint8_t data5[5] = { 0x00, 0x00, 0x00, 0x00, 0xFF };
+    req.data     = data5;
+    req.data_len = 5;
+    n = handler_task_query(&req, resp, sizeof(resp), 1);
+    EXPECT("Lc=5 (unknown handle) → Status=0xFF, SW=0x9000 (not rejected)",
+           n == 3 && resp[0] == 0xFF && get_u16(resp + 1) == 0x9000);
+
+    /* ── TC-QUERY-011: terminal Handle past TTL ─────────── */
+    printf("\n[TC-QUERY-011: Success handle past TTL → sweep reclaims → Status=0xFF]\n");
+    task_pool_init();
+    handle = task_pool_alloc(1, "memcached", 600);
+    e = task_pool_find_handle(handle, 1);
+    if (e) {
+        e->status     = TASK_SUCCESS;
+        e->created_at = time(NULL) - (TASK_TIMEOUT_SEC + 1);  /* backdate past TTL */
+    }
+    req = make_query_req(handle, data_buf);
+    n = handler_task_query(&req, resp, sizeof(resp), 1);
+    /* sweep_timeouts() frees the terminal slot → find_handle returns NULL → 0xFF */
+    EXPECT("Success past TTL → Status=0xFF, SW=0x9000",
+           n == 3 && resp[0] == 0xFF && get_u16(resp + 1) == 0x9000);
+
+    /* ── TC-QUERY-012: release_session zeroes terminal slots ── */
+    printf("\n[TC-QUERY-012: release_session() clears Success slot — not only Pending]\n");
+    task_pool_init();
+    handle = task_pool_alloc(1, "rabbitmq", 700);
+    e = task_pool_find_handle(handle, 1);
+    if (e) e->status = TASK_SUCCESS;   /* terminal state — handle never queried */
+    task_pool_release_session(1);
+    EXPECT("Success slot cleared by release_session",
+           task_pool_find_handle(handle, 1) == NULL);
 
     /* ── Summary ─────────────────────────────────────────── */
     printf("\n=== Summary: %d passed, %d failed ===\n", g_pass, g_fail);

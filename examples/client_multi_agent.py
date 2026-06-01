@@ -156,6 +156,7 @@ def connect(host, port, client_priv, server_pub_hex):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(15)
     sock.connect((host, port))
+    sock.sendall(struct.pack('>I', PRE_HANDSHAKE_MAGIC))
     got_hex = recv_pre_handshake_frame(sock)
     if got_hex != server_pub_hex:
         sock.close()

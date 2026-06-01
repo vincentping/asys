@@ -12,6 +12,7 @@
 - **asyd**: C daemon running on the managed node; accepts, authenticates, and executes ASys instructions
 - **Protocol port**: TCP 7816 (homage to ISO 7816)
 - **Core value**: skip shell text parsing; let AI agents interface with the system via a strongly-typed binary instruction set
+- **Versions**: protocol v1.0 (`0x0100` in Pre-Handshake Frame) and software version (asyd v0.3.x) are managed independently
 
 ---
 
@@ -22,7 +23,7 @@
 | `docs/en/asys-spec.md` | Protocol specification: ISA, security model, APDU frame format |
 | `docs/en/asys-design-notes.md` | Architecture decision records |
 | `docs/en/asys-conformance.md` | Conformance testing guide |
-| `docs/en/asys-whitepaper.md` | Design philosophy and competitive landscape |
+| `docs/en/asys-whitepaper.md` | Background, design rationale, available options, and where ASys fits |
 
 ---
 

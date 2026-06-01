@@ -1,5 +1,5 @@
 Name:           asyd
-Version:        0.3.0
+Version:        0.3.1
 Release:        1%{?dist}
 Summary:        ASys Daemon — Agentic System Interface
 License:        Apache-2.0
@@ -44,6 +44,11 @@ install -D -m 0644 deploy/asyd.service \
 /usr/lib/systemd/system/asyd.service
 
 %changelog
+* Wed May 28 2026 Vincent Ping <vincentping@gmail.com> - 0.3.1-1
+- Client-Speak-First (ADR-22): wait for 4-byte Magic before Pre-Handshake Frame
+- Add --help and --version flags
+- Add TC-MAG-001/002/003 conformance tests
+
 * Mon Apr 06 2026 Vincent Ping <vincentping@gmail.com> - 0.3.0-1
 - Phase 5 open-source release
 - asys.isa v1.0: SYS_CAPS/SYS_HELLO/SYS_STATUS/SYS_PROCS/TASK_QUERY/PROC_THROTTLE/SVC_RESTART

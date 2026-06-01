@@ -130,6 +130,7 @@ def connect_and_handshake(host, port, client_priv):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(10)
     sock.connect((host, port))
+    sock.sendall(struct.pack('>I', PRE_HANDSHAKE_MAGIC))
     server_pub_hex = recv_pre_handshake_frame(sock)
     stored = load_known_host(host, port)
     if stored is None:

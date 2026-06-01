@@ -109,8 +109,11 @@ int handler_svc_restart(const ApduFrame *req, uint8_t *resp, size_t sz, uint16_t
 
     /* fork/exec systemctl restart <svc_name>.service */
     pid_t pid = fork();
-    if (pid < 0)
+    if (pid < 0) {
+        if (errno == ENOMEM)
+            return sw_write(resp, SW_SYS_ERR_NOMEM);
         return sw_write(resp, SW_SYS_ERR);
+    }
 
     if (pid == 0) {
         /* child: append ".service" suffix asyd strips at input, exec */

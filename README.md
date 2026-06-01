@@ -11,7 +11,9 @@ SSH was designed for humans. Agents don't need a terminal.
 
 When an AI agent runs `ps aux | grep nginx` over SSH, it parses free-form text that varies by OS, locale, and tool version. When it calls `SYS_PROCS`, it receives a fixed 44-byte binary frame: total process count, top-5 PIDs, CPU%, memory%, status flags — typed, unambiguous, the same on every node.
 
-ASys is to AI agents what POSIX syscalls are to programs: a stable, typed interface between the intelligence layer and the system layer. No shell. No text parsing. No guessing.
+ASys is an experiment: what if you designed a system interface specifically for AI agents, from first principles? Binary frames instead of text. A long-lived encrypted connection instead of per-command sessions. Instruction-level capability grants instead of broad SSH access. Built-in audit trail instead of shell history.
+
+It's not a replacement for SSH, Ansible, or Kubernetes operators — those tools are well-suited for their intended users (humans and orchestration pipelines). ASys is an additional option for the case where the operator is an AI agent and you want an interface designed for that from the ground up.
 
 ---
 
@@ -101,6 +103,8 @@ sudo bin/asyd
 | `--port <n>` | 7816 | TCP listen port |
 | `--listen <addr>` | 0.0.0.0 | Bind address |
 | `--debug` | off | Run in foreground with verbose logging to stderr |
+| `--version` | — | Print version and exit |
+| `--help` | — | Print usage and exit |
 
 ```bash
 # Example: custom port, local-only
@@ -361,7 +365,12 @@ No SSH. No shell. One signed binary instruction over an encrypted channel.
 ## Security
 
 **Transport:** Noise IK (Curve25519 + ChaCha20-Poly1305 + BLAKE2b) — 1-RTT mutual
-authentication, forward secrecy per session. No passwords. No certificates. No CA.
+authentication. No passwords. No certificates. No CA. Session content has forward
+secrecy (session keys are derived from per-handshake ephemeral keys; compromising
+the static private key does not expose past session content). Known boundary: the
+agent's static public key is encrypted under the server's static public key during
+the handshake — a static private key compromise would theoretically allow recovery
+of agent identities from recorded handshake traffic.
 
 **Server identity:** on every new connection, `asyd` sends a 38-byte
 Pre-Handshake Frame (`[Magic][Version][ServerPubKey]`) before the Noise handshake.
@@ -393,7 +402,7 @@ escalation even if the process is compromised.
 
 | Document | Description |
 |----------|-------------|
-| [`docs/en/asys-whitepaper.md`](docs/en/asys-whitepaper.md) | Design philosophy: why ASys exists, competitive landscape |
+| [`docs/en/asys-whitepaper.md`](docs/en/asys-whitepaper.md) | Background, design rationale, available options, and where ASys fits |
 | [`docs/en/asys-spec.md`](docs/en/asys-spec.md) | Protocol specification: ISA, security model, APDU frame format |
 | [`docs/en/asys-design-notes.md`](docs/en/asys-design-notes.md) | Architecture decision records (why not JSON / mTLS / shell) |
 | [`docs/en/asys-conformance.md`](docs/en/asys-conformance.md) | Conformance testing guide |
@@ -402,6 +411,14 @@ escalation even if the process is compromised.
 ---
 
 ## Changelog
+
+> **Version numbers**: `asyd` software versions (v0.3.x) and the ASys protocol version (v1.0, `0x0100`) are managed independently. The protocol version increments only when the wire format or instruction semantics change.
+
+### v0.3.1 — 2026-05-28
+
+- **Client-Speak-First** (ADR-22): after TCP connect, `asyd` waits for the client to send a 4-byte Magic (`0x41535953`) before sending anything; 1-second hardcoded timeout; mismatch or timeout → silent close, no response. Reduces exposure to generic port scanners.
+- `--help` and `--version` flags added to `asyd`
+- Conformance: `test_client_magic.c` (TC-MAG-001/002/003) added to `make check`
 
 ### v0.3.0 — 2026-05-27 (initial open-source release)
 

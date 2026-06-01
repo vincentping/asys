@@ -119,6 +119,7 @@ def connect(host, port, client_priv):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    sock.sendall(struct.pack('>I', PRE_HANDSHAKE_MAGIC))
 
     server_pub_hex = recv_pre_handshake_frame(sock)
     stored = load_known_host(host, port)

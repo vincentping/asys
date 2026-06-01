@@ -31,6 +31,7 @@
 #define SW_BLOCKED       0x6400u  /* Transient unavailability           */
 #define SW_REPLAY_DETECTED 0x6985u /* In-session Seq replay detected      */
 #define SW_SYS_ERR       0x6F00u  /* System emergency (low byte = errno)*/
+#define SW_SYS_ERR_NOMEM 0x6F01u  /* fork() failed: ENOMEM              */
 
 /* Maximum response buffer size (handlers must not exceed this) */
 #define DISP_RESP_MAX    256
