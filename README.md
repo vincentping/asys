@@ -11,7 +11,7 @@
 
 SSH was designed for humans. Agents don't need a terminal.
 
-When an AI agent runs `ps aux | grep nginx` over SSH, it parses free-form text that varies by OS, locale, and tool version. When it calls `SYS_PROCS`, it receives a fixed 44-byte binary frame: total process count, top-5 PIDs, CPU%, memory%, status flags — typed, unambiguous, the same on every node.
+When an AI agent runs `ps aux | grep nginx` over SSH, it parses free-form text that varies by OS, locale, and tool version. But when agents call ASys's `SYS_PROCS` instruction, they receive a fixed 44-byte binary frame: total process count, top-5 PIDs, CPU%, memory%, status flags — typed, unambiguous, the same on every node.
 
 ASys is an experiment: what if you designed a system interface specifically for AI agents, from first principles? Binary frames instead of text. A long-lived encrypted connection instead of per-command sessions. Instruction-level capability grants instead of broad SSH access. Built-in audit trail instead of shell history.
 

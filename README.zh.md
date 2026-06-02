@@ -11,7 +11,7 @@
 
 SSH 是为人类设计的。Agent 不需要终端。
 
-当 AI Agent 通过 SSH 执行 `ps aux | grep nginx`，它拿到的是自由文本——格式因 OS、locale 和工具版本而异，Agent 还得自己解析。当它调用 `SYS_PROCS`，拿到的是固定的 44 字节二进制帧：进程总数、top-5 PID、CPU%、内存%、状态标志——类型明确，无歧义，在每个节点上都一样。
+当 AI Agent 通过 SSH 执行 `ps aux | grep nginx`，它拿到的是自由文本——格式因 OS、locale 和工具版本而异，Agent 还得自己解析。但当 Agent 调用 ASys 的 `SYS_PROCS` 指令，拿到的是固定的 44 字节二进制帧：进程总数、top-5 PID、CPU%、内存%、状态标志——类型明确，无歧义，在每个节点上都一样。
 
 ASys 是一个实验：如果从头设计一个专门给 AI Agent 用的系统接口，会是什么样？二进制帧替代文本，长连接替代每命令建连，指令级能力授权替代宽泛的 SSH 访问，内置审计日志替代 shell history。
 
