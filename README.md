@@ -3,6 +3,8 @@
 > The binary system interface protocol for AI Agents —
 > port 7816, zero shell parsing, deterministic semantics.
 
+[中文](README.zh.md) | English
+
 ---
 
 ## Why ASys
