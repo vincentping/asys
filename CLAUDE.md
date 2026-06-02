@@ -18,12 +18,14 @@
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| `docs/en/asys-spec.md` | Protocol specification: ISA, security model, APDU frame format |
-| `docs/en/asys-design-notes.md` | Architecture decision records |
-| `docs/en/asys-conformance.md` | Conformance testing guide |
-| `docs/en/asys-whitepaper.md` | Background, design rationale, available options, and where ASys fits |
+`docs/zh/` is the authoritative source (original); `docs/en/` is the English translation.
+
+| Document | ZH | EN |
+|----------|----|----|
+| Protocol specification: ISA, security model, APDU frame format | `docs/zh/asys-spec.md` | `docs/en/asys-spec.md` |
+| Architecture decision records | `docs/zh/asys-design-notes.md` | `docs/en/asys-design-notes.md` |
+| Conformance testing guide | `docs/zh/asys-conformance.md` | `docs/en/asys-conformance.md` |
+| Background, design rationale, available options, and where ASys fits | `docs/zh/asys-whitepaper.md` | `docs/en/asys-whitepaper.md` |
 
 ---
 
@@ -81,7 +83,7 @@ make clean
 
 ## Adding a New Instruction
 
-1. Confirm the instruction code is defined in `docs/en/asys-spec.md` §1
+1. Confirm the instruction code is defined in `docs/zh/asys-spec.md` §1 (or `docs/en/asys-spec.md`)
 2. Create a new `.c` file in `src/asyd/handlers/`
 3. Register the handler in `src/asyd/core/dispatcher.c`
 4. Update `CORE_CAPS_BITMAP` / `EXT_CAPS_BITMAP` in `dispatcher.h`
