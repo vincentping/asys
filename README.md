@@ -3,11 +3,23 @@
 > The binary system interface protocol for AI Agents —
 > port 7816, zero shell parsing, deterministic semantics.
 
-[中文](README.zh.md) | English
+English | [中文](README.zh.md) 
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/vincentping/asys)](https://github.com/vincentping/asys/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)](https://github.com/vincentping/asys)
+
+---
+
+## Table of Contents
+
+- [Why ASys](#why-asys)
+- [Architecture](#architecture)
+- [Instruction Set](#instruction-set)
+- [Quick Start](#quick-start)
+- [Security](#security)
+- [Documentation](#documentation)
+- [Changelog](#changelog)
 
 ---
 
@@ -21,6 +33,7 @@ ASys is an experiment: what if you designed a system interface specifically for 
 
 It's not a replacement for SSH, Ansible, or Kubernetes operators — those tools are well-suited for their intended users (humans and orchestration pipelines). ASys is an additional option for the case where the operator is an AI agent and you want an interface designed for that from the ground up.
 
+To understand the full design rationale and where ASys fits in the agent infrastructure landscape, start with the **[whitepaper](docs/en/asys-whitepaper.md)**.
 ---
 
 ## Architecture
