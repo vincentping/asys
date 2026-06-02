@@ -15,7 +15,7 @@ tests/conformance/test_client_magic
 tests/conformance/test_whitelist
 
 # Internal docs (never push to public repo)
-docs/zh/internal/
+docs/internal/
 
 # Key files (never commit)
 *.key
