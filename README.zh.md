@@ -5,6 +5,10 @@
 
 [English](README.md)
 
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/vincentping/asys)](https://github.com/vincentping/asys/releases/latest)
+[![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)](https://github.com/vincentping/asys)
+
 ---
 
 ## 为什么做 ASys
