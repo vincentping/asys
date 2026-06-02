@@ -373,10 +373,10 @@ Select # or PID to throttle (blank to cancel): 1
 
 | 文档 | 描述 |
 |------|------|
-| [`docs/en/asys-whitepaper.md`](docs/en/asys-whitepaper.md) | 背景、设计 rationale、可选方案对比及 ASys 的定位 |
-| [`docs/en/asys-spec.md`](docs/en/asys-spec.md) | 协议规范：ISA、安全模型、APDU 帧格式 |
-| [`docs/en/asys-design-notes.md`](docs/en/asys-design-notes.md) | 架构决策记录（为什么不用 JSON / mTLS / shell） |
-| [`docs/en/asys-conformance.md`](docs/en/asys-conformance.md) | 一致性测试指南 |
+| [`docs/zh/asys-whitepaper.md`](docs/zh/asys-whitepaper.md) | 背景、设计 rationale、可选方案对比及 ASys 的定位 |
+| [`docs/zh/asys-spec.md`](docs/zh/asys-spec.md) | 协议规范：ISA、安全模型、APDU 帧格式 |
+| [`docs/zh/asys-design-notes.md`](docs/zh/asys-design-notes.md) | 架构决策记录（为什么不用 JSON / mTLS / shell） |
+| [`docs/zh/asys-conformance.md`](docs/zh/asys-conformance.md) | 一致性测试指南 |
 | [`sdk/definitions/asys.isa`](sdk/definitions/asys.isa) | 机器可读 ISA 定义（TOML） |
 
 ---
