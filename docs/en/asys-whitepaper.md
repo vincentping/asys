@@ -86,7 +86,7 @@ Least privilege is not a security policy option in ASys — it is a physical pro
 
 ### 2.3 Principle Three: Separation of Mechanism and Policy
 
-Core ISA (`0x00-0x0F`) defined instructions are permanently locked — once published, they cannot be changed. Standard ISA (`0x20-0x8F`) defined instruction semantics are similarly locked, but empty slots can be filled by the protocol group as needed. Protocol Control (`0x10-0x1F`) is reserved by the protocol group for internal use. Vendor Extensions (`0xC0-0xFF`) are freely defined by domain administrators — ASys provides only the "handle" (authentication and transport) without touching the "blade" (domain logic).
+Core ISA (`0x00-0x0F`) defined instructions are permanently locked — once published, they cannot be changed. Standard ISA (`0x20-0x8F`) defined instruction semantics are similarly locked, but empty slots can be filled by the protocol group as needed. Protocol Control (`0x10-0x1F`) is reserved by the protocol group for internal use. `0x90-0xBF` is the Standard ISA reserved range, set aside for future standard instruction groups defined by the protocol group. Vendor Extensions (`0xC0-0xFF`) are freely defined by domain administrators — ASys provides only the "handle" (authentication and transport) without touching the "blade" (domain logic).
 
 **Hard Core, Soft Boundary**
 

@@ -3,7 +3,7 @@
 
 > This document records the "why" behind ASys's key design decisions — why each choice was made, and why alternatives were rejected.
 > Intended for core contributors, to prevent repeating mistakes already made.
-> Last updated: 2026-05-27
+> Last updated: 2026-06-03
 
 ---
 
@@ -17,6 +17,7 @@
 12. [Why High Nibble Paging?](#12-why-high-nibble-paging)
 6. [Why Port 7816?](#6-why-port-7816)
 28. [Core ISA vs. Extensions Layering Analogy: USB Protocol](#28-core-isa-vs-extensions-layering-analogy-usb-protocol)
+29. [ASys and the Driver Model: The Intelligent Driver](#29-asys-and-the-driver-model-the-intelligent-driver)
 
 **Security Architecture**
 4. [Why Noise IK over mTLS?](#4-why-noise-ik-over-mtls)
@@ -67,6 +68,8 @@
 - **Zero-copy feasible**: Fixed-length binary structures can be mapped directly to C structs; the memory written by `recv()` is the final data, with no intermediate parsing buffer.
 
 **Conclusion**: Determinism over debuggability. Debugging tools (`asys-inspect`) can be built on top of binary, but parsing hallucinations cannot be eliminated from text protocols.
+
+**External perspective**: JSON can certainly support auditing — that is not the reason for choosing binary frames. The core reason is **semantic determinism**: in JSON, both `"pid": "1234"` and `"pid": 1234` are valid, and parser behavior may differ; in a binary frame, PID is a fixed-offset 4-byte `uint32` — unambiguous, with no injection surface, parsed identically by every implementation. In short: **JSON is designed for humans to read; APDU is designed for machines to process. Agents don't need the "human-readable" property.**
 
 ---
 
@@ -1085,6 +1088,33 @@ Handle expired (TTL triggered), session mismatch, Handle never existed — all t
 Core ISA's relationship to Standard ISA + Vendor Extensions is analogous to the USB core protocol's relationship to device descriptors — USB's power management, handshake, and enumeration logic are the eternally unchanging core; whether the connected device is a mouse, a hard drive, or a graphics card is determined by each device's descriptor. This guarantees that any host (Agent) connecting to any device (Node) can complete the initial handshake immediately, while placing no limits on the device's functional boundary.
 
 USB's Enumeration and Descriptor mechanism is nearly isomorphic to ASys's `SYS_CAPS` handshake process: the host does not need to know the device type in advance — it simply reads the descriptor through the standard handshake to understand the device's capabilities and load the corresponding driver. This is exactly the relationship ASys aims to establish between agents and nodes.
+
+---
+
+## 29. ASys and the Driver Model: The Intelligent Driver
+
+A device driver's essence is to abstract hardware operations into a structured interface, freeing upper-layer software from caring about low-level details. The kernel exposes device capabilities to user space through IOCTL: fixed command codes, structured parameters, well-defined operation targets — exactly the design philosophy of APDU.
+
+ASys does the same thing, with one difference: the consumer is an AI Agent rather than the kernel. ASys abstracts system operations into structured instructions that agents can understand directly, without caring whether the underlying system is RHEL 9 or Ubuntu 24.
+
+**Isomorphism with IOCTL:**
+
+| IOCTL (device driver) | ASys |
+|-----------------------|------|
+| Command code (e.g. `SIOCGIFADDR`) | INS byte (e.g. `0x02 SYS_STATUS`) |
+| Parameter struct | P1/P2 + Data fields |
+| Operation target (device file) | Node (identified by connection) |
+| Return value / errno | SW status word (`0x9000` / `0x69xx`) |
+
+**Relationship to ADR-28's USB analogy:**
+
+ADR-28 describes the **layered structure** of the ASys instruction set (Core ISA as USB core protocol, extensions as device descriptors). This ADR describes the isomorphism of ASys's **overall role in the system stack** — ASys is to agents what a driver is to the kernel: exposing a unified interface upward, shielding implementation differences downward.
+
+The two analogies are complementary, not redundant: the USB analogy addresses "how to organise the instruction set"; the driver analogy addresses "what role this component plays in the stack."
+
+**Practical implication:**
+
+This analogy also points to a natural extension of ASys: AI reads chip datasheets and generates a HAL, which is then wrapped in an ASys-style unified instruction set. Agents can then operate embedded devices across chip families — STM32, ESP32, or others — without caring about the underlying hardware. The driver model's ability to "abstract away hardware differences" has a new application in the agent era.
 
 ---
 
