@@ -185,7 +185,7 @@ APDU 的设计哲学是"指令 + 参数 + 期望响应长度"，本质上是为*
 | `Data` | 变长 | 业务数据（含 Seq 序列号） |
 | `Le` | 1B | 期望响应长度；`0x00` 表示仅返回状态字 |
 
-安全帧在 `Le` 之后附加 16 字节 Auth Tag（ChaCha20-Poly1305），不计入 `Lc`，覆盖完整帧头 + Epoch_ID + Seq + Payload——任何字段被篡改均导致验签失败。
+安全帧在 `Le` 之后附加 16 字节 Auth Tag（HMAC-BLAKE2b，见 §2.2.3），不计入 `Lc`，覆盖完整帧头 + Epoch_ID + Seq + Payload——任何字段被篡改均导致验签失败。
 
 ### 4.2 指令集分层：High Nibble Paging
 

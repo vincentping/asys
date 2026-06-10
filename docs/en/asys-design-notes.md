@@ -31,6 +31,7 @@
 25. [Non-Blocking Constraint on Audit Write-Before-Execute: The Emergency Interface Cannot Be Blocked by Disk I/O](#25-non-blocking-constraint-on-audit-write-before-execute-the-emergency-interface-cannot-be-blocked-by-disk-io)
 26. [Identity Management in Cloud-Native Elastic Environments: Known Applicability Boundaries](#26-identity-management-in-cloud-native-elastic-environments-known-applicability-boundaries)
 27. [Task_Handle TTL and Memory Reclamation Strategy](#27-task_handle-ttl-and-memory-reclamation-strategy)
+30. [Why Per-Instruction Auth Tag Inside the Noise Channel?](#30-why-per-instruction-auth-tag-inside-the-noise-channel)
 
 **Implementation Decisions**
 8. [Why C over Rust/Go?](#8-why-c-over-rustgo)
@@ -1115,6 +1116,46 @@ The two analogies are complementary, not redundant: the USB analogy addresses "h
 **Practical implication:**
 
 This analogy also points to a natural extension of ASys: AI reads chip datasheets and generates a HAL, which is then wrapped in an ASys-style unified instruction set. Agents can then operate embedded devices across chip families — STM32, ESP32, or others — without caring about the underlying hardware. The driver model's ability to "abstract away hardware differences" has a new application in the agent era.
+
+---
+
+## 30. Why Per-Instruction Auth Tag Inside the Noise Channel?
+
+> Recorded 2026-06-10. Origin: a response to the question of whether the per-instruction Auth Tag is cryptographically redundant.
+
+**Decision**: Retain the per-instruction Auth Tag (`HMAC-BLAKE2b`, see `asys-spec.md` §2.2.3) for Standard ISA and higher security levels, positioned as defense-in-depth and a frame-format stability commitment — not as a necessary supplement to transport-layer integrity.
+
+**Background and the challenge**:
+
+After the handshake completes, all APDU frames travel inside the ChaCha20-Poly1305 AEAD channel established by Noise IK (see `asys-spec.md` §2.1). The AEAD itself already guarantees the confidentiality and integrity of every frame — any tampered ciphertext fails verification at the decryption stage. The Noise transport nonce increments per frame, and each handshake derives an independent session key, so intercepted ciphertext — whether replayed within the session or across sessions — cannot be correctly decrypted under the new nonce/key.
+
+This raises a fair challenge: if the AEAD channel already provides integrity and replay resistance, is computing an additional `HMAC-BLAKE2b` per instruction (see §2.2.3) on top of it purely redundant?
+
+This must be acknowledged head-on: **for a network attacker outside the Noise channel, the per-instruction Auth Tag adds a defensive increment of approximately zero.** A network attacker can neither read the plaintext nor construct ciphertext that survives AEAD decryption; instruction authenticity is in fact already underwritten by the AEAD layer. This ADR does not argue that this layer is cryptographically "necessary" — it explains why it is retained given that its defensive increment is approximately zero.
+
+**Reasons for retention (defense-in-depth and frame-format stability)**:
+
+First, defense against a single point of failure in the transport implementation. `asyd`'s Noise IK state machine is implemented in-house on top of Monocypher (see §7, §15), not a widely-audited mature library. Of the three cross-language interoperability bugs recorded in §15, two DH-direction errors cancelled each other out in single-language testing and were only exposed by cross-implementation interop — which demonstrates the real possibility of silent defects in a hand-written transport layer. Should a defect appear at the Noise/Monocypher implementation layer (e.g. nonce reuse or a state-machine error), the integrity guarantee provided by the AEAD could partially fail. The per-instruction Auth Tag, with an independently computed MAC, ensures that a single point of failure in the transport layer does not directly compromise instruction integrity. This is the standard motivation for defense-in-depth: not staking instruction authenticity 100% on the implementation correctness of a single cryptographic layer.
+
+Second, a frame-format stability commitment. The security bits of the CLA byte (`Sec`, bit3-2) and the trailing 16-byte Auth Tag slot are parts of the frame structure ASys inherited from ISO 7816 APDU (see §5, `asys-spec.md` §3.1.2). The protocol evolution principles require field offsets to remain invariant within a major version (see `asys-spec.md` §1.9). Removing the Auth Tag slot and `Sec` semantics now, then restoring them later if needed, would constitute two breaking changes — in direct conflict with the core commitment that "binary is immortal." Retaining a slot whose current defensive increment is limited but whose semantics are clear costs far less than repeatedly altering the frame format.
+
+Third, negligible cost. `HMAC-BLAKE2b` shares the same underlying construction as Noise IK's KDF (see §14); a single MAC computation is negligible at `asyd`'s load scale and does not constitute a performance bottleneck on the core request path.
+
+**Cost accounting (recorded honestly)**:
+
+Retaining this layer does carry costs, recorded faithfully:
+
+- Each Standard ISA instruction incurs one additional `HMAC-BLAKE2b` computation and one constant-time comparison before execution;
+- The Data segment of a secure frame loses 4 bytes to `Seq` (see §2.2.2);
+- SDK implementation complexity rises — the SDK must correctly derive `Epoch_ID`, maintain `Seq`, and compute the MAC following the field concatenation order in §2.2.3.
+
+A clear distinction must be drawn: **`Seq` is an application-layer deduplication and idempotency mechanism, and is not part of the "cryptographic redundancy" discussed in this ADR.** `Seq` underpins the within-session replay protection of §2.2.4 and the exactly-once semantics in SDK retransmission scenarios (see §23 on handling `0x6985`); its value is independent of this ADR — even if the per-instruction MAC were argued to be redundant, `Seq` should not be removed on that basis.
+
+**An honest positioning of Epoch_ID**:
+
+The design goal of `Epoch_ID` in §2.2.3 is to make cross-session replay cryptographically fail. But inside the Noise AEAD channel, cross-session replay already fails at the decryption layer — old-session ciphertext cannot be decrypted under a new session key. Therefore mixing `Epoch_ID` into the Auth Tag computation has **no independent security value** inside the AEAD channel; its defensive goal is already covered by the transport layer. `Epoch_ID` is retained solely for the integrity and consistency of the signature algorithm definition — it is a fixed component of the signature input in §2.2.3, and removing it would alter the MAC input layout for no security benefit. This is not glossed over: the practical role of `Epoch_ID` shares the same origin as the per-instruction Auth Tag — inside the AEAD channel it is a component of defense-in-depth, not an independently necessary cryptographic mechanism.
+
+**Conclusion**: The marginal defense the per-instruction Auth Tag provides against a network attacker is close to zero, and this is acknowledged faithfully. The reasons for retaining it are defense-in-depth (not trusting the single-point correctness of a hand-written transport layer) and frame-format stability (not repeatedly altering the APDU-inherited frame structure for limited benefit) — not a necessary supplement to transport-layer integrity. The application-layer deduplication value of `Seq` is independent of this and is unaffected by this ADR.
 
 ---
 

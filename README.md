@@ -33,6 +33,8 @@ ASys is an experiment: what if you designed a system interface specifically for 
 
 It's not a replacement for SSH, Ansible, or Kubernetes operators — those tools are well-suited for their intended users (humans and orchestration pipelines). ASys is an additional option for the case where the operator is an AI agent and you want an interface designed for that from the ground up.
 
+It's also not an alternative to MCP. The Model Context Protocol standardizes how an agent calls a *tool*; ASys is what a tool calls to reach the *operating system*. An MCP server can use ASys as its system backend.
+
 To understand the full design rationale and where ASys fits in the agent infrastructure landscape, start with the [**whitepaper**](docs/en/asys-whitepaper.md).
 
 ---

@@ -820,7 +820,7 @@ ASys borrows the APDU structural layout from ISO/IEC 7816 but redefines the CLA 
 | `1` | Ext | Extended frame flag. `1`=extended frame (Lc is followed by 2-byte actual length); `0`=standard frame |
 | `0` | RFU | Reserved; always `0` |
 
-**Auth Tag position and MAC coverage**: When `Sec != 00`, the 16-byte Auth Tag (ChaCha20-Poly1305) is **always appended at the physical end of the entire frame** (after the `Le` field) and is not counted in `Lc`:
+**Auth Tag position and MAC coverage**: When `Sec != 00`, the 16-byte Auth Tag (HMAC-BLAKE2b, see §2.2.3) is **always appended at the physical end of the entire frame** (after the `Le` field) and is not counted in `Lc`:
 
 ```
 Secure frame:   [CLA][INS][P1][P2][Lc][Data][Le][Auth Tag(16B)]

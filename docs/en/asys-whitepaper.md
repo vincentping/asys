@@ -185,7 +185,7 @@ The default port **7816** is an explicit homage to the ISO/IEC 7816 technical he
 | `Data` | variable | Payload (includes Seq sequence number) |
 | `Le` | 1B | Expected response length; `0x00` means return status word only |
 
-Secure frames append a 16-byte Auth Tag (ChaCha20-Poly1305) after `Le`, not counted in `Lc`, covering the complete frame header + Epoch_ID + Seq + Payload — any tampered field causes authentication to fail.
+Secure frames append a 16-byte Auth Tag (HMAC-BLAKE2b, see §2.2.3) after `Le`, not counted in `Lc`, covering the complete frame header + Epoch_ID + Seq + Payload — any tampered field causes authentication to fail.
 
 ### 4.2 Instruction Set Layering: High Nibble Paging
 
